@@ -28,6 +28,7 @@ import { GenerationCommonConfigSchema, MessageData } from '@genkit-ai/ai/model';
 import { DocumentData } from '@genkit-ai/ai/retriever';
 import { GenkitError } from '@genkit-ai/core';
 import { parseSchema } from '@genkit-ai/core/schema';
+import { runInNewSpan, SPAN_TYPE_ATTR } from '@genkit-ai/core/tracing';
 import { createHash } from 'crypto';
 import fm, { FrontMatterResult } from 'front-matter';
 import z from 'zod';
@@ -197,16 +198,41 @@ export class Dotprompt<Variables = unknown> implements PromptMetadata {
     return this._generateOptions<O>(opt);
   }
 
+  async renderInNewSpan<O extends z.ZodTypeAny = z.ZodTypeAny>(
+    opt: PromptGenerateOptions<Variables>
+  ): Promise<GenerateOptions<z.ZodTypeAny, O>> {
+    return runInNewSpan(
+      {
+        metadata: {
+          name: this.name,
+          input: opt,
+        },
+        labels: {
+          [SPAN_TYPE_ATTR]: 'dotprompt',
+        },
+      },
+      async (metadata) => {
+        const generateOptions = this._generateOptions<O>(opt);
+        metadata.output = generateOptions;
+        return generateOptions;
+      }
+    );
+  }
+
   async generate<O extends z.ZodTypeAny = z.ZodTypeAny>(
     opt: PromptGenerateOptions<Variables>
   ): Promise<GenerateResponse<z.infer<O>>> {
-    return generate<z.ZodTypeAny, O>(this.render<O>(opt));
+    return this.renderInNewSpan<O>(opt).then((generateOptions) =>
+      generate(generateOptions)
+    );
   }
 
   async generateStream(
     opt: PromptGenerateOptions<Variables>
   ): Promise<GenerateStreamResponse> {
-    return generateStream(this.render(opt));
+    return this.renderInNewSpan(opt).then((generateOptions) =>
+      generateStream(generateOptions)
+    );
   }
 }
 
