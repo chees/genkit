@@ -62,6 +62,7 @@ import {
   llama31,
   modelGardenOpenaiCompatibleModel,
 } from './model_garden.js';
+import { VertexRerankerConfig, vertexAiRerankers } from './reranker.js';
 import {
   VectorSearchOptions,
   vertexAiIndexers,
@@ -126,6 +127,8 @@ export interface PluginOptions {
   };
   /** Configure Vertex AI vector search index options */
   vectorSearchOptions?: VectorSearchOptions<z.ZodTypeAny, any, any>[];
+  /** Configure reranker options */
+  rerankOptions?: VertexRerankerConfig[];
 }
 
 const CLOUD_PLATFROM_OAUTH_SCOPE =
@@ -237,12 +240,21 @@ export const vertexAI: Plugin<[PluginOptions] | []> = genkitPlugin(
       });
     }
 
+    const rerankOptions = {
+      pluginOptions: options,
+      authClient,
+      projectId,
+    };
+
+    const rerankers = vertexAiRerankers(rerankOptions);
+
     return {
       models,
       embedders,
       evaluators: vertexEvaluators(authClient, metrics, projectId, location),
       retrievers,
       indexers,
+      rerankers,
     };
   }
 );
