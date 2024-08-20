@@ -89,6 +89,12 @@
       "require": "./lib/tool.js",
       "import": "./lib/tool.mjs",
       "default": "./lib/tool.js"
+    },
+    "./reranker": {
+      "types": "./lib/reranker.d.ts",
+      "require": "./lib/reranker.js",
+      "import": "./lib/reranker.mjs",
+      "default": "./lib/reranker.js"
     }
   },
   "typesVersions": {
@@ -113,6 +119,9 @@
       ],
       "tool": [
         "lib/tool"
+      ],
+      "reranker": [
+        "lib/reranker"
       ]
     }
   }
